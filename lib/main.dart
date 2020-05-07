@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'quiz_brain.dart';
 
 void main() => runApp(Quizzler());
+QuizBrain quizBrain = QuizBrain();
 
 class Quizzler extends StatelessWidget {
   @override
@@ -25,6 +27,54 @@ class QuizPage extends StatefulWidget {
 }
 
 class _QuizPageState extends State<QuizPage> {
+  final List<Icon> scoreKeeper = [];
+  int score = 0;
+
+  Future<void> _showFinishDialog() async {
+    return showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return AlertDialog(
+              title: Text('Congratulations!'),
+              content: SingleChildScrollView(
+                child: Text(
+                    'You\'ve answered all the questions, your final score is $score. Want to try again?'),
+              ),
+              actions: <Widget>[
+                FlatButton(
+                    child: Text('Cancel'),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    }),
+                FlatButton(
+                    child: Text('Try again'),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      quizBrain.reset();
+                      setState(() {
+                        scoreKeeper.clear();
+                        score = 0;
+                      });
+                    })
+              ]);
+        });
+  }
+
+  void checkAnswer(bool answer) {
+    if (quizBrain.isFinished()) {
+      _showFinishDialog();
+    } else {
+      setState(() {
+        scoreKeeper.add(quizBrain.getQuestionAnswer() == answer
+            ? Icon(Icons.check, color: Colors.green)
+            : Icon(Icons.close, color: Colors.red));
+        if (quizBrain.getQuestionAnswer() == answer) score += 1;
+      });
+      quizBrain.nextQuestion();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -37,7 +87,7 @@ class _QuizPageState extends State<QuizPage> {
             padding: EdgeInsets.all(10.0),
             child: Center(
               child: Text(
-                'This is where the question text will go.',
+                quizBrain.getCurrentQuestion(),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 25.0,
@@ -60,9 +110,7 @@ class _QuizPageState extends State<QuizPage> {
                   fontSize: 20.0,
                 ),
               ),
-              onPressed: () {
-                //The user picked true.
-              },
+              onPressed: () => checkAnswer(true),
             ),
           ),
         ),
@@ -78,20 +126,12 @@ class _QuizPageState extends State<QuizPage> {
                   color: Colors.white,
                 ),
               ),
-              onPressed: () {
-                //The user picked false.
-              },
+              onPressed: () => checkAnswer(false),
             ),
           ),
         ),
-        //TODO: Add a Row here as your score keeper
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: scoreKeeper)
       ],
     );
   }
 }
-
-/*
-question1: 'You can lead a cow down stairs but not up stairs.', false,
-question2: 'Approximately one quarter of human bones are in the feet.', true,
-question3: 'A slug\'s blood is green.', true,
-*/
